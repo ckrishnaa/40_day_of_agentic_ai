@@ -1,25 +1,8 @@
-"""
-few_shot.py
------------
-Technique: Few-Shot Prompting
-
-BEFORE: Zero-shot instruction asking for a specific, terse output format.
-        Without examples, the model tends to add preambles, inconsistent
-        punctuation, or extra commentary.
-AFTER:  The same task, preceded by 2-3 input/output examples using
-        LangChain's FewShotChatMessagePromptTemplate, so the model mimics
-        the exact format shown.
-
-Sample input used for both:
-    "The screen flickers randomly and sometimes the laptop won't turn on."
-Task: classify a support ticket into one label + one-line reason.
-"""
-
+from groq_client import run_prompt
 from langchain_core.prompts import (
     ChatPromptTemplate,
     FewShotChatMessagePromptTemplate,
 )
-from groq_client import run_prompt
 
 SAMPLE_INPUT = "The screen flickers randomly and sometimes the laptop won't turn on."
 
@@ -41,32 +24,43 @@ EXAMPLES = [
 
 def build_before_prompt() -> ChatPromptTemplate:
     """Zero-shot version of the same classification task (no examples)."""
-    return ChatPromptTemplate.from_messages([
-        ("system", "Classify the support ticket into a category with a one-line reason."),
-        ("human", "{ticket}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Classify the support ticket into a category with a one-line reason.",
+            ),
+            ("human", "{ticket}"),
+        ]
+    )
 
 
 def build_after_prompt() -> ChatPromptTemplate:
     """Few-shot version: examples teach the model the exact output format."""
-    example_prompt = ChatPromptTemplate.from_messages([
-        ("human", "{ticket}"),
-        ("ai", "{output}"),
-    ])
+    example_prompt = ChatPromptTemplate.from_messages(
+        [
+            ("human", "{ticket}"),
+            ("ai", "{output}"),
+        ]
+    )
 
     few_shot_prompt = FewShotChatMessagePromptTemplate(
         example_prompt=example_prompt,
         examples=EXAMPLES,
     )
 
-    return ChatPromptTemplate.from_messages([
-        ("system",
-         "Classify each support ticket into a category with a one-line reason. "
-         "Always reply in the exact format: 'Category: <category> | Reason: <reason>'. "
-         "No extra commentary."),
-        few_shot_prompt,
-        ("human", "{ticket}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Classify each support ticket into a category with a one-line reason. "
+                "Always reply in the exact format: 'Category: <category> | Reason: <reason>'. "
+                "No extra commentary.",
+            ),
+            few_shot_prompt,
+            ("human", "{ticket}"),
+        ]
+    )
 
 
 def get_few_shot(ticket: str = SAMPLE_INPUT, mode: str = "after") -> str:

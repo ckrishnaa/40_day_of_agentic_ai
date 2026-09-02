@@ -1,29 +1,17 @@
-"""
-zero_shot.py
-------------
-Technique: Zero-Shot Prompting
-
-BEFORE: A vague, under-specified instruction. The model has to guess the
-        desired format, length, tone, and audience.
-AFTER:  A precise, self-contained instruction — still zero examples, but
-        the task, constraints, and output format are spelled out.
-
-Sample input used for both:
-    "Explain what RAG (Retrieval-Augmented Generation) is."
-"""
-
-from langchain_core.prompts import ChatPromptTemplate
 from groq_client import run_prompt
+from langchain_core.prompts import ChatPromptTemplate
 
 SAMPLE_INPUT = "Explain what RAG (Retrieval-Augmented Generation) is."
 
 
 def build_before_prompt() -> ChatPromptTemplate:
     """Naive zero-shot prompt: just forwards the raw user question."""
-    return ChatPromptTemplate.from_messages([
-        ("system", "You are a helpful AI assistant."),
-        ("human", "{question}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            ("system", "You are a helpful AI assistant."),
+            ("human", "{question}"),
+        ]
+    )
 
 
 def build_after_prompt() -> ChatPromptTemplate:
@@ -34,20 +22,26 @@ def build_after_prompt() -> ChatPromptTemplate:
     - specifies structure
     - forbids jargon without definition
     """
-    return ChatPromptTemplate.from_messages([
-        ("system",
-         "You are a technical writer creating documentation for junior "
-         "software engineers who know Python but have never used LLMs."),
-        ("human",
-         "{question}\n\n"
-         "Requirements:\n"
-         "- Answer in exactly 3 short paragraphs.\n"
-         "- Paragraph 1: one-sentence definition.\n"
-         "- Paragraph 2: why it matters / what problem it solves.\n"
-         "- Paragraph 3: a concrete, everyday analogy.\n"
-         "- Do not use the words 'leverage' or 'utilize'.\n"
-         "- Define any acronym the first time you use it."),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are a technical writer creating documentation for junior "
+                "software engineers who know Python but have never used LLMs.",
+            ),
+            (
+                "human",
+                "{question}\n\n"
+                "Requirements:\n"
+                "- Answer in exactly 3 short paragraphs.\n"
+                "- Paragraph 1: one-sentence definition.\n"
+                "- Paragraph 2: why it matters / what problem it solves.\n"
+                "- Paragraph 3: a concrete, everyday analogy.\n"
+                "- Do not use the words 'leverage' or 'utilize'.\n"
+                "- Define any acronym the first time you use it.",
+            ),
+        ]
+    )
 
 
 def get_zero_shot(question: str = SAMPLE_INPUT, mode: str = "after") -> str:

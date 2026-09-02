@@ -1,37 +1,27 @@
-"""
-self_consistency.py
--------------------
-Technique: Self-Consistency Prompting
-
-BEFORE: Asking a complex reasoning question once and taking the first answer
-        the model generates (temperature=0 or 0.7).
-AFTER:  Running the exact same prompt multiple times (e.g., 5) at a higher
-        temperature to explore diverse reasoning paths, then taking a 
-        majority vote on the final extracted answer.
-
-Sample input used for both:
-    "Find the sum of all even numbers between 1 and 50."
-"""
-
 import re
 from collections import Counter
-from langchain_core.prompts import ChatPromptTemplate
+
 from groq_client import run_prompt
+from langchain_core.prompts import ChatPromptTemplate
 
 SAMPLE_INPUT = "Find the sum of all even numbers between 1 and 50."
 
 
 def build_consistency_prompt() -> ChatPromptTemplate:
     """
-    Prompt designed for Self-Consistency. We use a CoT-like format so the 
+    Prompt designed for Self-Consistency. We use a CoT-like format so the
     model shows its work and ends with a parseable final answer.
     """
-    return ChatPromptTemplate.from_messages([
-        ("system", 
-         "Solve the problem step-by-step. End your response with a final line: "
-         "'Final Answer: <number>'"),
-        ("human", "{question}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Solve the problem step-by-step. End your response with a final line: "
+                "'Final Answer: <number>'",
+            ),
+            ("human", "{question}"),
+        ]
+    )
 
 
 def extract_final_answer(text: str) -> str | None:
@@ -40,14 +30,16 @@ def extract_final_answer(text: str) -> str | None:
     return match.group(1) if match else None
 
 
-def get_self_consistency(question: str = SAMPLE_INPUT, mode: str = "after", num_samples: int = 5) -> str:
+def get_self_consistency(
+    question: str = SAMPLE_INPUT, mode: str = "after", num_samples: int = 5
+) -> str:
     """
     Run the self-consistency prompt against Groq.
     If mode == "before", we just run it once.
     If mode == "after", we run it `num_samples` times and take a majority vote.
     """
     prompt = build_consistency_prompt()
-    
+
     if mode == "before":
         # Just run once at temperature 0 (or default)
         result_text = run_prompt(prompt, {"question": question}, temperature=0)
@@ -57,12 +49,12 @@ def get_self_consistency(question: str = SAMPLE_INPUT, mode: str = "after", num_
     # mode == "after": Run multiple times with higher temperature
     print(f"Generating {num_samples} reasoning paths...")
     results = []
-    
+
     for i in range(num_samples):
         # We use a higher temperature to allow for diverse reasoning paths
         text = run_prompt(prompt, {"question": question}, temperature=0.7)
         answer = extract_final_answer(text)
-        
+
         if answer:
             results.append(answer)
             print(f" Sample {i + 1}: Found answer {answer}")

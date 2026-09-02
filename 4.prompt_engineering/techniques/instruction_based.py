@@ -1,27 +1,8 @@
-"""
-instruction_based.py
----------------------
-Technique: Instruction-Based (Structured Output) Prompting
-
-BEFORE: Asks for information in free-flowing prose. Output shape varies
-        run to run, hard to parse programmatically.
-AFTER:  Explicit output-format instructions (strict JSON matching a
-        schema) PLUS a Pydantic model that validates the parsed response.
-        Since we're calling Groq via raw HTTP (not a LangChain chat
-        model object), the schema is enforced by prompt instructions +
-        post-hoc validation rather than `with_structured_output()`.
-
-Sample input used for both:
-    "LangChain is a framework for building LLM applications, released in
-     2022, written primarily in Python, with over 90k GitHub stars."
-Task: extract structured facts about a software project.
-"""
-
 import json
-from typing import Optional
-from pydantic import BaseModel, Field, ValidationError
-from langchain_core.prompts import ChatPromptTemplate
+
 from groq_client import run_prompt
+from langchain_core.prompts import ChatPromptTemplate
+from pydantic import BaseModel, Field, ValidationError
 
 SAMPLE_INPUT = (
     "LangChain is a framework for building LLM applications, released in "
@@ -31,20 +12,27 @@ SAMPLE_INPUT = (
 
 class ProjectFacts(BaseModel):
     """Schema the model must fill in for the AFTER (structured) variant."""
+
     name: str = Field(description="Name of the software project")
     category: str = Field(description="What kind of tool/framework it is")
-    release_year: Optional[int] = Field(default=None, description="Year released, if mentioned")
-    primary_language: Optional[str] = Field(default=None, description="Main language, if mentioned")
-    popularity_signal: Optional[str] = Field(
+    release_year: int | None = Field(
+        default=None, description="Year released, if mentioned"
+    )
+    primary_language: str | None = Field(
+        default=None, description="Main language, if mentioned"
+    )
+    popularity_signal: str | None = Field(
         default=None, description="Any popularity metric mentioned, e.g. GitHub stars"
     )
 
 
 def build_before_prompt() -> ChatPromptTemplate:
     """Naive instruction: free-text extraction, no schema."""
-    return ChatPromptTemplate.from_messages([
-        ("human", "Tell me the key facts about this project:\n{text}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            ("human", "Tell me the key facts about this project:\n{text}"),
+        ]
+    )
 
 
 def build_after_prompt() -> ChatPromptTemplate:
@@ -54,15 +42,19 @@ def build_after_prompt() -> ChatPromptTemplate:
     a LangChain-native structured-output binding here.
     """
     schema_hint = json.dumps(ProjectFacts.model_json_schema()["properties"], indent=2)
-    return ChatPromptTemplate.from_messages([
-        ("system",
-         "Extract structured facts from the given text and respond with "
-         "ONLY a single valid JSON object — no markdown fences, no prose "
-         "before or after. Use null for any field not mentioned in the "
-         "text. Do not guess.\n\n"
-         f"JSON fields required:\n{schema_hint}"),
-        ("human", "{text}"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "Extract structured facts from the given text and respond with "
+                "ONLY a single valid JSON object — no markdown fences, no prose "
+                "before or after. Use null for any field not mentioned in the "
+                "text. Do not guess.\n\n"
+                f"JSON fields required:\n{schema_hint}",
+            ),
+            ("human", "{text}"),
+        ]
+    )
 
 
 def get_instruction_based_before(text: str = SAMPLE_INPUT) -> str:
@@ -80,13 +72,21 @@ def get_instruction_based_after(text: str = SAMPLE_INPUT) -> ProjectFacts:
     prompt = build_after_prompt()
     raw = run_prompt(prompt, {"text": text}, temperature=0)
 
-    cleaned = raw.strip().removeprefix("```json").removeprefix("```").removesuffix("```").strip()
+    cleaned = (
+        raw.strip()
+        .removeprefix("```json")
+        .removeprefix("```")
+        .removesuffix("```")
+        .strip()
+    )
 
     try:
         data = json.loads(cleaned)
         return ProjectFacts.model_validate(data)
     except (json.JSONDecodeError, ValidationError) as e:
-        raise ValueError(f"Model did not return valid structured output: {e}\nRaw output: {raw}")
+        raise ValueError(
+            f"Model did not return valid structured output: {e}\nRaw output: {raw}"
+        )
 
 
 if __name__ == "__main__":

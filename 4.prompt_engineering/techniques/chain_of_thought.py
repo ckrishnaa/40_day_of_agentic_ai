@@ -1,23 +1,7 @@
-"""
-chain_of_thought.py
---------------------
-Technique: Chain-of-Thought (CoT) Prompting
-
-BEFORE: Asks directly for the final answer to a multi-step reasoning
-        problem. Small/fast models often skip steps and get it wrong.
-AFTER:  Explicitly instructs the model to reason step-by-step BEFORE
-        giving the final answer, with reasoning and answer clearly
-        separated (so downstream code can parse just the answer).
-
-Sample input used for both:
-    "A store had 42 notebooks. It sold 17 on Monday and received a new
-     shipment of 25 on Tuesday, then sold 13 more on Wednesday. How many
-     notebooks does the store have now?"
-"""
-
 import re
-from langchain_core.prompts import ChatPromptTemplate
+
 from groq_client import run_prompt
+from langchain_core.prompts import ChatPromptTemplate
 
 SAMPLE_INPUT = (
     "A store had 42 notebooks. It sold 17 on Monday and received a new "
@@ -28,9 +12,11 @@ SAMPLE_INPUT = (
 
 def build_before_prompt() -> ChatPromptTemplate:
     """Naive prompt: asks straight for the answer, no reasoning scaffold."""
-    return ChatPromptTemplate.from_messages([
-        ("human", "{problem}\nAnswer with just the number."),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            ("human", "{problem}\nAnswer with just the number."),
+        ]
+    )
 
 
 def build_after_prompt() -> ChatPromptTemplate:
@@ -38,16 +24,22 @@ def build_after_prompt() -> ChatPromptTemplate:
     CoT prompt: forces step-by-step reasoning and a clearly delimited
     final answer, so it's both more accurate and machine-parseable.
     """
-    return ChatPromptTemplate.from_messages([
-        ("system",
-         "You are a careful math tutor. Always solve problems by breaking "
-         "them into numbered steps before giving the final answer."),
-        ("human",
-         "{problem}\n\n"
-         "Think through this step by step, showing each calculation on its "
-         "own numbered line. Then, on a final line by itself, write:\n"
-         "FINAL ANSWER: <number>"),
-    ])
+    return ChatPromptTemplate.from_messages(
+        [
+            (
+                "system",
+                "You are a careful math tutor. Always solve problems by breaking "
+                "them into numbered steps before giving the final answer.",
+            ),
+            (
+                "human",
+                "{problem}\n\n"
+                "Think through this step by step, showing each calculation on its "
+                "own numbered line. Then, on a final line by itself, write:\n"
+                "FINAL ANSWER: <number>",
+            ),
+        ]
+    )
 
 
 def extract_final_answer(text: str) -> str:
