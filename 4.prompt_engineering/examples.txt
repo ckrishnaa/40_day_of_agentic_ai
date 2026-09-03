@@ -64,19 +64,21 @@ Find the sum of even numbers between 1 and 50.
 3. System Prompting
 
 System:
-You are a mathematics tutor who explains every step clearly.
-
+You are a mathematics tutor who explains every step clearly. Give the response in JSON format.
 
 User:
 Find the sum of all even numbers between 1 and 50.
 
-
 System:
 You are an exam evaluator. Give a concise answer with formula.
 
-
 User:
 Find the sum of even numbers from 1 to 50.
+
+
+PS: what is 15% of 80 ?
+System: You are a precise math tutor. Always convert the percentage to a decimal first, then multiply and show units.
+User: What is 15% of 80 ?
 
 
 4. Contextual Prompting
