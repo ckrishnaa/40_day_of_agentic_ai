@@ -28,9 +28,14 @@ agent = create_react_agent(model=llm, tools=[get_weather])
 
 # async def main():
 #     async for chunk in agent.astream(
-#         {"messages": [{"role": "user", "content": "Explain async in Python simply"}]}
+#         {
+#             "messages": [
+#                 {"role": "user", "content": "Explain async in Python simply in detail "}
+#             ]
+#         }
 #     ):
 #         print(chunk)
+#         print("#" * 30)
 
 
 async def main():

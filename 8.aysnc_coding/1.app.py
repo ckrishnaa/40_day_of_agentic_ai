@@ -3,7 +3,7 @@ import asyncio
 
 async def make_tea():
     print("Boiling water...")
-    await asyncio.sleep(3)
+    await asyncio.sleep(3)  # time taking process.
     print("Tea is ready!")
 
 
