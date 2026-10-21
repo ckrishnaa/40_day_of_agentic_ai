@@ -9,3 +9,5 @@ model = ChatGroq(
     temperature=0,
     api_key=os.getenv("GROQ_API_KEY"),
 )
+
+
